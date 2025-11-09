@@ -235,6 +235,7 @@ class CFM(nn.Module):
         *,
         lens: int["b"] | None = None,
         noise_scheduler: str | None = None,
+        phoneme_mask: torch.Tensor | None = None,  # [b, n] boolean mask for phoneme-specific masking
     ):
         # handle raw wave
         if inp.ndim == 2:
@@ -258,8 +259,14 @@ class CFM(nn.Module):
         mask = lens_to_mask(lens, length=seq_len)
 
         # get a random span to mask out for training conditionally
-        frac_lengths = torch.zeros((batch,), device=self.device).float().uniform_(*self.frac_lengths_mask)
-        rand_span_mask = mask_from_frac_lengths(lens, frac_lengths)
+        # OR use phoneme-specific mask if provided
+        if exists(phoneme_mask):
+            # Use provided phoneme mask (e.g., for hard 'S' sounds)
+            rand_span_mask = phoneme_mask.to(device)
+        else:
+            # Use random masking (original behavior)
+            frac_lengths = torch.zeros((batch,), device=self.device).float().uniform_(*self.frac_lengths_mask)
+            rand_span_mask = mask_from_frac_lengths(lens, frac_lengths)
 
         if exists(mask):
             rand_span_mask &= mask
