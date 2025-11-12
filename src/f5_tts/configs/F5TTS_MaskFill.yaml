@@ -9,7 +9,7 @@ datasets:
   batch_size_per_gpu: 4  # even smaller batch size for memory efficiency
   batch_size_type: sample  # frame | sample
   max_samples: 64  # max sequences per batch if use frame-wise batch_size
-  num_workers: 1  # disable multiprocessing to avoid worker memory issues
+  num_workers: 0  # disable multiprocessing to avoid worker memory issues
 
 optim:
   epochs: 10  # fewer epochs for fine-tuning
@@ -22,7 +22,7 @@ optim:
 model:
   name: F5TTS_v1_Base_MaskFill  # model name for this fine-tuning task
   tokenizer: custom  # tokenizer type - use custom since you have specific vocab
-  tokenizer_path: /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/snapshots/f582b6e5897fe8a5835059405a8439d13bdf7684/vocab.txt  # path to your custom vocab file
+  tokenizer_path: /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/blobs/cd934390e8f4b3ce98eb319ae618c084d01504b5/vocab.txt  # path to your custom vocab file
   backbone: DiT
   arch:
     dim: 1024
@@ -56,4 +56,4 @@ ckpts:
   last_per_updates: 1000  # save last checkpoint per updates
   save_dir: ckpts/${model.name}_${model.mel_spec.mel_spec_type}_${model.tokenizer}_${datasets.name}
   finetune: True  # enable fine-tuning mode
-  pretrain_path: /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/snapshots/f582b6e5897fe8a5835059405a8439d13bdf7684/espeech_tts_rlv2.pt  # path to custom pretrained checkpoint
+  pretrain_path: /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/blobs/cd934390e8f4b3ce98eb319ae618c084d01504b5/espeech_tts_rlv2.pt  # path to custom pretrained checkpoint
