@@ -18,7 +18,7 @@ from datasets import load_from_disk, load_dataset
 from omegaconf import OmegaConf
 
 from f5_tts.model import CFM, Trainer
-from f5_tts.model.dataset_masked_phoneme_optimized import MemoryOptimizedMaskedPhonemeDataset, collate_fn_masked
+from f5_tts.model.dataset_masked_phoneme_optimized_fixed import MemoryOptimizedMaskedPhonemeDataset, collate_fn_masked
 from f5_tts.model.utils import get_tokenizer
 
 

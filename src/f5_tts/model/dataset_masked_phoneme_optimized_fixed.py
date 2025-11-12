@@ -1,12 +1,14 @@
 """
 Memory-optimized version of MaskedPhonemeDataset.
 Includes explicit memory management and optimizations for large datasets.
+Fixed version that avoids TorchCodec issues by handling audio loading more robustly.
 """
 
 import torch
 import torchaudio
 import gc
 import random
+import numpy as np
 from datasets import Dataset as Dataset_
 from torch.utils.data import Dataset
 
@@ -17,6 +19,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
     """
     Memory-optimized version of MaskedPhonemeDataset for large datasets.
     Includes explicit garbage collection and memory management.
+    Fixed to handle TorchCodec issues gracefully.
     """
 
     def __init__(
@@ -63,8 +66,10 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         """Get the length of mel spectrogram in frames for a given sample."""
         try:
             row = self.data[index]
-            audio = row["audio"]["array"]
-            sample_rate = row["audio"]["sampling_rate"]
+            # Safe audio loading
+            audio, sample_rate = self._safe_load_audio(row)
+            if audio is None:
+                return 1000  # Default fallback
             return audio.shape[-1] / sample_rate * self.target_sample_rate / self.hop_length
         except Exception:
             # Return a reasonable default if there's an error
@@ -99,6 +104,45 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
 
         return mask
 
+    def _safe_load_audio(self, row):
+        """
+        Safely load audio from dataset row, handling TorchCodec failures.
+        Returns (audio_array, sample_rate) or (None, None) if failed.
+        """
+        try:
+            # First try to access the audio normally
+            audio = row["audio"]["array"]
+            sample_rate = row["audio"]["sampling_rate"]
+            return audio, sample_rate
+        except Exception as torchcodec_error:
+            print(f"[WARNING] TorchCodec failed: {str(torchcodec_error)[:100]}...")
+
+            # Try alternative approaches
+            try:
+                # If the dataset has a 'path' or 'file' field, try loading directly
+                if "path" in row:
+                    audio_path = row["path"]
+                    audio_tensor, sample_rate = torchaudio.load(audio_path)
+                    return audio_tensor.numpy().squeeze(), sample_rate
+                elif "file" in row:
+                    # If it's a file-like object, try to get path
+                    audio_path = row["file"]
+                    if hasattr(audio_path, 'name'):
+                        audio_tensor, sample_rate = torchaudio.load(audio_path.name)
+                        return audio_tensor.numpy().squeeze(), sample_rate
+
+                # Try to see if audio data is stored as bytes
+                audio_data = row.get("audio", {})
+                if isinstance(audio_data, dict) and "bytes" in audio_data:
+                    # Handle bytes data (would need more specific implementation)
+                    print("[WARNING] Audio stored as bytes - not implemented yet")
+                    return None, None
+
+            except Exception as fallback_error:
+                print(f"[WARNING] Fallback audio loading also failed: {str(fallback_error)[:100]}...")
+
+            return None, None
+
     def __getitem__(self, index):
         max_retries = 5
         for retry in range(max_retries):
@@ -113,9 +157,15 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                 row = self.data[index]
                 print("[DEBUG] Successfully loaded data row")
 
-                print("[DEBUG] Extracting audio array")
-                audio = row["audio"]["array"]
-                sample_rate = row["audio"]["sampling_rate"]
+                print("[DEBUG] Extracting audio array (safe mode)")
+                # Use safe audio loading
+                audio, sample_rate = self._safe_load_audio(row)
+
+                if audio is None:
+                    print(f"[WARNING] Could not load audio for sample {index}, skipping")
+                    index = (index + 1) % len(self.data)
+                    continue
+
                 duration = audio.shape[-1] / sample_rate
                 print(f"[DEBUG] Audio extracted - shape: {audio.shape}, sample_rate: {sample_rate}, duration: {duration:.2f}s")
 
@@ -126,8 +176,11 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                     continue
 
                 # Convert to tensor (with explicit dtype to save memory)
-                print(f"[DEBUG] Converting numpy array to torch tensor - size: {audio.nbytes / 1024**2:.1f}MB")
-                audio_tensor = torch.from_numpy(audio).float()
+                print(f"[DEBUG] Converting array to torch tensor - size: {audio.nbytes / 1024**2:.1f}MB")
+                if isinstance(audio, np.ndarray):
+                    audio_tensor = torch.from_numpy(audio).float()
+                else:
+                    audio_tensor = torch.tensor(audio).float()
                 print(f"[DEBUG] Audio tensor created - shape: {audio_tensor.shape}")
 
                 # Resample if needed
