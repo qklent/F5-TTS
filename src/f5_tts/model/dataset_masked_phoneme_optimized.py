@@ -6,6 +6,7 @@ Includes explicit memory management and optimizations for large datasets.
 import torch
 import torchaudio
 import gc
+import random
 from datasets import Dataset as Dataset_
 from torch.utils.data import Dataset
 
@@ -29,8 +30,21 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         mel_spec_type="vocos",
         mask_key="hard_s_timestamps",
         max_audio_length=30.0,  # Maximum audio length in seconds
+        dataset_length=None,  # Limit dataset to this many samples (None = use full dataset)
+        random_seed=42,  # Random seed for reproducible sampling (None = no seed)
     ):
         self.data = hf_dataset
+        # Truncate dataset if dataset_length is specified - use random sampling
+        if dataset_length is not None and dataset_length < len(hf_dataset):
+            # Set random seed for reproducible sampling
+            if random_seed is not None:
+                random.seed(random_seed)
+
+            # Generate random indices without replacement
+            total_samples = len(hf_dataset)
+            random_indices = random.sample(range(total_samples), dataset_length)
+            self.data = hf_dataset.select(random_indices)
+
         self.target_sample_rate = target_sample_rate
         self.hop_length = hop_length
         self.mask_key = mask_key
