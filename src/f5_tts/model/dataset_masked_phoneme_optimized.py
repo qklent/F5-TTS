@@ -103,6 +103,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         max_retries = 5
         for retry in range(max_retries):
             try:
+                print("start getting item")
                 row = self.data[index]
                 audio = row["audio"]["array"]
                 sample_rate = row["audio"]["sampling_rate"]
@@ -148,7 +149,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                 # Explicit garbage collection every 100 samples
                 if index % 100 == 0:
                     gc.collect()
-
+                print("end getting item")
                 return dict(
                     mel_spec=mel_spec,
                     text=text,
