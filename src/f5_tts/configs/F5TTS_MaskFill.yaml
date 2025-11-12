@@ -1,0 +1,59 @@
+hydra:
+  run:
+    dir: ckpts/${model.name}_${model.mel_spec.mel_spec_type}_${model.tokenizer}_${datasets.name}_MaskFill/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+datasets:
+  name: phoneme_masked  # dataset name for tokenizer and checkpoint paths
+  path: ../data/test_processed  # path to HuggingFace dataset with phoneme timestamps
+  mask_key: hard_s_timestamps  # key in dataset containing phoneme timestamps to mask
+  batch_size_per_gpu: 3200  # smaller batch size for mask fill fine-tuning
+  batch_size_type: frame  # frame | sample
+  max_samples: 64  # max sequences per batch if use frame-wise batch_size
+  num_workers: 4
+
+optim:
+  epochs: 10  # fewer epochs for fine-tuning
+  learning_rate: 1e-5  # lower learning rate for fine-tuning
+  num_warmup_updates: 2000  # warmup updates
+  grad_accumulation_steps: 1  # note: updates = steps / grad_accumulation_steps
+  max_grad_norm: 1.0  # gradient clipping
+  bnb_optimizer: False  # use bnb 8bit AdamW optimizer or not
+
+model:
+  name: F5TTS_v1_Base_MaskFill  # model name for this fine-tuning task
+  tokenizer: char  # tokenizer type
+  tokenizer_path: null  # if 'custom' tokenizer, define the path want to use (should be vocab.txt)
+  backbone: DiT
+  arch:
+    dim: 1024
+    depth: 22
+    heads: 16
+    ff_mult: 2
+    text_dim: 512
+    text_mask_padding: True
+    qk_norm: null  # null | rms_norm
+    conv_layers: 4
+    pe_attn_head: null
+    attn_backend: torch  # torch | flash_attn
+    attn_mask_enabled: False
+    checkpoint_activations: False  # recompute activations and save memory for extra compute
+  mel_spec:
+    target_sample_rate: 24000
+    n_mel_channels: 100
+    hop_length: 256
+    win_length: 1024
+    n_fft: 1024
+    mel_spec_type: vocos  # vocos | bigvgan
+  vocoder:
+    is_local: False  # use local offline ckpt or not
+    local_path: null  # local vocoder path
+
+ckpts:
+  logger: wandb  # wandb | tensorboard | null
+  log_samples: True  # infer random sample per save checkpoint
+  save_per_updates: 5000  # save checkpoint per updates (more frequent for fine-tuning)
+  keep_last_n_checkpoints: 3  # keep last 3 checkpoints for fine-tuning
+  last_per_updates: 1000  # save last checkpoint per updates
+  save_dir: ckpts/${model.name}_${model.mel_spec.mel_spec_type}_${model.tokenizer}_${datasets.name}
+  finetune: True  # enable fine-tuning mode
+  pretrain_path: null  # path to custom pretrained checkpoint (if null, uses default for model variant)
