@@ -109,7 +109,38 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         Safely load audio from dataset row, handling TorchCodec failures.
         Returns (audio_array, sample_rate) or (None, None) if failed.
         """
+        # Debug: print available keys in the row
+        print(f"[DEBUG] Available keys in dataset row: {list(row.keys())}")
+
+        # Try alternative approaches first since torchcodec AudioDecoder is not available
         try:
+            # If the dataset has a 'path' or 'file' field, try loading directly first
+            if "path" in row:
+                audio_path = row["path"]
+                print(f"[DEBUG] Trying to load audio from path: {audio_path}")
+                audio_tensor, sample_rate = torchaudio.load(audio_path)
+                return audio_tensor.numpy().squeeze(), sample_rate
+            elif "file" in row:
+                # If it's a file-like object, try to get path
+                audio_path = row["file"]
+                print(f"[DEBUG] Trying to load audio from file: {audio_path}")
+                if hasattr(audio_path, 'name'):
+                    audio_tensor, sample_rate = torchaudio.load(audio_path.name)
+                    return audio_tensor.numpy().squeeze(), sample_rate
+                elif isinstance(audio_path, str):
+                    audio_tensor, sample_rate = torchaudio.load(audio_path)
+                    return audio_tensor.numpy().squeeze(), sample_rate
+            elif "audio_path" in row:
+                audio_path = row["audio_path"]
+                print(f"[DEBUG] Trying to load audio from audio_path: {audio_path}")
+                audio_tensor, sample_rate = torchaudio.load(audio_path)
+                return audio_tensor.numpy().squeeze(), sample_rate
+        except Exception as file_loading_error:
+            print(f"[WARNING] File-based audio loading failed: {str(file_loading_error)[:100]}...")
+
+        # Fall back to trying torchcodec (will likely fail but worth trying)
+        try:
+            print("[DEBUG] Trying torchcodec audio loading...")
             # First try to access the audio normally
             audio = row["audio"]["array"]
             sample_rate = row["audio"]["sampling_rate"]
@@ -117,27 +148,14 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         except Exception as torchcodec_error:
             print(f"[WARNING] TorchCodec failed: {str(torchcodec_error)[:100]}...")
 
-            # Try alternative approaches
+            # Try to see if audio data is stored as bytes
             try:
-                # If the dataset has a 'path' or 'file' field, try loading directly
-                if "path" in row:
-                    audio_path = row["path"]
-                    audio_tensor, sample_rate = torchaudio.load(audio_path)
-                    return audio_tensor.numpy().squeeze(), sample_rate
-                elif "file" in row:
-                    # If it's a file-like object, try to get path
-                    audio_path = row["file"]
-                    if hasattr(audio_path, 'name'):
-                        audio_tensor, sample_rate = torchaudio.load(audio_path.name)
-                        return audio_tensor.numpy().squeeze(), sample_rate
-
-                # Try to see if audio data is stored as bytes
                 audio_data = row.get("audio", {})
+                print(f"[DEBUG] Audio data type: {type(audio_data)}, keys: {list(audio_data.keys()) if isinstance(audio_data, dict) else 'N/A'}")
                 if isinstance(audio_data, dict) and "bytes" in audio_data:
                     # Handle bytes data (would need more specific implementation)
                     print("[WARNING] Audio stored as bytes - not implemented yet")
                     return None, None
-
             except Exception as fallback_error:
                 print(f"[WARNING] Fallback audio loading also failed: {str(fallback_error)[:100]}...")
 
@@ -268,7 +286,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         dummy_mask = torch.zeros(100, dtype=torch.bool)
         return {
             "mel": dummy_mel,
-            "text": "",
+            "text": "dummy text sample",  # Non-empty text to avoid tokenization issues
             "phoneme_mask": dummy_mask,
             "mel_lengths": 100,
         }
