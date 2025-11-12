@@ -111,9 +111,9 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
 
                 print(f"[DEBUG] Loading data row for index {index}")
                 row = self.data[index]
-                print(f"[DEBUG] Successfully loaded data row")
+                print("[DEBUG] Successfully loaded data row")
 
-                print(f"[DEBUG] Extracting audio array")
+                print("[DEBUG] Extracting audio array")
                 audio = row["audio"]["array"]
                 sample_rate = row["audio"]["sampling_rate"]
                 duration = audio.shape[-1] / sample_rate
@@ -134,14 +134,14 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                 if sample_rate != self.target_sample_rate:
                     print(f"[DEBUG] Resampling from {sample_rate} to {self.target_sample_rate}")
                     resampler = torchaudio.transforms.Resample(sample_rate, self.target_sample_rate)
-                    print(f"[DEBUG] Resampler created, applying transformation")
+                    print("[DEBUG] Resampler created, applying transformation")
                     audio_tensor = resampler(audio_tensor)
                     print(f"[DEBUG] Resampling complete - new shape: {audio_tensor.shape}")
                     # Explicit cleanup of resampler
                     del resampler
-                    print(f"[DEBUG] Resampler deleted")
+                    print("[DEBUG] Resampler deleted")
 
-                print(f"[DEBUG] Adding batch dimension")
+                print("[DEBUG] Adding batch dimension")
                 audio_tensor = audio_tensor.unsqueeze(0)  # 't -> 1 t'
                 print(f"[DEBUG] Audio tensor final shape: {audio_tensor.shape}")
 
@@ -151,7 +151,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
 
                 # Get mel spectrogram
                 try:
-                    print(f"[DEBUG] Computing mel spectrogram")
+                    print("[DEBUG] Computing mel spectrogram")
                     mel_spec = self.mel_spectrogram(audio_tensor)
                     print(f"[DEBUG] Mel spectrogram computed - shape: {mel_spec.shape}")
                     mel_spec = mel_spec.squeeze(0)  # '1 d t -> d t'
@@ -162,21 +162,21 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                     continue
 
                 # Clean up audio tensor to free memory
-                print(f"[DEBUG] Cleaning up audio tensor")
+                print("[DEBUG] Cleaning up audio tensor")
                 del audio_tensor
-                print(f"[DEBUG] Audio tensor deleted")
+                print("[DEBUG] Audio tensor deleted")
 
                 # Memory info after mel processing
                 if torch.cuda.is_available():
                     print(f"[DEBUG] GPU memory after mel processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated")
 
                 # Get text
-                print(f"[DEBUG] Extracting text")
+                print("[DEBUG] Extracting text")
                 text = row["text"]
                 print(f"[DEBUG] Text extracted - length: {len(text)} characters")
 
                 # Create phoneme mask
-                print(f"[DEBUG] Creating phoneme mask")
+                print("[DEBUG] Creating phoneme mask")
                 phoneme_timestamps = row.get(self.mask_key, None)
                 mel_length = mel_spec.shape[-1]
                 print(f"[DEBUG] Phoneme timestamps: {len(phoneme_timestamps) if phoneme_timestamps else 0} segments, mel_length: {mel_length}")
@@ -189,7 +189,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
-                        print(f"[DEBUG] GPU cache cleared")
+                        print("[DEBUG] GPU cache cleared")
 
                 print(f"[DEBUG] Successfully completed __getitem__ for index {index}")
 
@@ -197,11 +197,12 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                 if torch.cuda.is_available():
                     print(f"[DEBUG] Final GPU memory: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated")
 
-                return dict(
-                    mel_spec=mel_spec,
-                    text=text,
-                    phoneme_mask=phoneme_mask,
-                )
+                return {
+                    "mel": mel_spec,
+                    "text": text,
+                    "phoneme_mask": phoneme_mask,
+                    "mel_lengths": mel_length,
+                }
 
             except Exception as e:
                 print(f"Error loading sample {index}: {e}")
@@ -212,11 +213,12 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         print(f"Failed to load any valid samples after {max_retries} retries, returning dummy sample")
         dummy_mel = torch.zeros((100, 100))  # 100 mel channels, 100 frames
         dummy_mask = torch.zeros(100, dtype=torch.bool)
-        return dict(
-            mel_spec=dummy_mel,
-            text="",
-            phoneme_mask=dummy_mask,
-        )
+        return {
+            "mel": dummy_mel,
+            "text": "",
+            "phoneme_mask": dummy_mask,
+            "mel_lengths": 100,
+        }
 
 
 def collate_fn_masked(batch):

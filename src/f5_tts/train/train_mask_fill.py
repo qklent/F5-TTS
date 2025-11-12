@@ -65,14 +65,14 @@ class MaskedPhonemeTrainer(Trainer):
         else:
             generator = None
 
-        # Use custom collate function
+        # Use custom collate function with memory-optimized settings
         if self.batch_size_type == "sample":
             train_dataloader = DataLoader(
                 train_dataset,
                 collate_fn=collate_fn_masked,
                 num_workers=num_workers,
-                pin_memory=True,
-                persistent_workers=True,
+                pin_memory=False,  # Disable pin_memory to reduce GPU memory usage
+                persistent_workers=False,  # Disable persistent workers to prevent memory leaks
                 batch_size=self.batch_size_per_gpu,
                 shuffle=True,
                 generator=generator,
@@ -91,8 +91,8 @@ class MaskedPhonemeTrainer(Trainer):
                 train_dataset,
                 collate_fn=collate_fn_masked,
                 num_workers=num_workers,
-                pin_memory=True,
-                persistent_workers=True,
+                pin_memory=False,  # Disable pin_memory to reduce GPU memory usage
+                persistent_workers=False,  # Disable persistent workers to prevent memory leaks
                 batch_sampler=batch_sampler,
             )
         else:
@@ -319,6 +319,9 @@ def main(model_cfg):
     train_dataset = MemoryOptimizedMaskedPhonemeDataset(
         train_hf,
         mask_key=model_cfg.datasets.mask_key,
+        max_audio_length=15.0,  # Reduce max audio length to save memory
+        dataset_length=model_cfg.datasets.get('dataset_length', None),
+        random_seed=model_cfg.datasets.get('random_seed', None),
         **model_cfg.model.mel_spec,
     )
 
