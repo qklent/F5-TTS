@@ -90,7 +90,7 @@ def maybe_masked_mean(t: float["b n d"], mask: bool["b n"] = None) -> float["b d
 
 # simple utf-8 tokenizer, since paper went character based
 def list_str_to_tensor(text: list[str], padding_value=-1) -> int["b nt"]:
-    list_tensors = [torch.tensor([*bytes(t, "UTF-8")]) for t in text]  # ByT5 style
+    list_tensors = [torch.tensor([*bytes(t, "UTF-8")], dtype=torch.long) for t in text]  # ByT5 style
     text = pad_sequence(list_tensors, padding_value=padding_value, batch_first=True)
     return text
 
@@ -101,7 +101,7 @@ def list_str_to_idx(
     vocab_char_map: dict[str, int],  # {char: idx}
     padding_value=-1,
 ) -> int["b nt"]:
-    list_idx_tensors = [torch.tensor([vocab_char_map.get(c, 0) for c in t]) for t in text]  # pinyin or char style
+    list_idx_tensors = [torch.tensor([vocab_char_map.get(c, 0) for c in t], dtype=torch.long) for t in text]  # pinyin or char style
     text = pad_sequence(list_idx_tensors, padding_value=padding_value, batch_first=True)
     return text
 
