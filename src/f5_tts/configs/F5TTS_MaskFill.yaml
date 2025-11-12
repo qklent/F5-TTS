@@ -3,8 +3,8 @@ hydra:
     dir: ckpts/${model.name}_${model.mel_spec.mel_spec_type}_${model.tokenizer}_${datasets.name}_MaskFill/${now:%Y-%m-%d}/${now:%H-%M-%S}
 
 datasets:
-  name: phoneme_masked  # dataset name for tokenizer and checkpoint paths
-  path: ../data/test_processed  # path to HuggingFace dataset with phoneme timestamps
+  name: tonebooks_hard_s  # dataset name for tokenizer and checkpoint paths
+  path: qklent/tonebooks-mfa-phonemes-only-hard-s  # HuggingFace dataset ID or local path
   mask_key: hard_s_timestamps  # key in dataset containing phoneme timestamps to mask
   batch_size_per_gpu: 3200  # smaller batch size for mask fill fine-tuning
   batch_size_type: frame  # frame | sample

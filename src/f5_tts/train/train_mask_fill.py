@@ -14,7 +14,7 @@ from importlib.resources import files
 
 import hydra
 from cached_path import cached_path
-from datasets import load_from_disk
+from datasets import load_from_disk, load_dataset
 from omegaconf import OmegaConf
 
 from f5_tts.model import CFM, Trainer
@@ -293,7 +293,17 @@ def main(model_cfg):
 
     # Load datasets
     print("\nLoading datasets...")
-    hf_dataset = load_from_disk(model_cfg.datasets.path)
+
+    # Check if it's a local path or HuggingFace dataset ID
+    dataset_path = model_cfg.datasets.path
+    if dataset_path.startswith("../") or dataset_path.startswith("/") or dataset_path.startswith("./"):
+        # Local dataset path
+        print(f"Loading local dataset from: {dataset_path}")
+        hf_dataset = load_from_disk(dataset_path)
+    else:
+        # HuggingFace dataset ID
+        print(f"Loading HuggingFace dataset: {dataset_path}")
+        hf_dataset = load_dataset(dataset_path)
 
     # Check if dataset has train/validation splits
     if hasattr(hf_dataset, "keys"):
