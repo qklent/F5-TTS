@@ -6,10 +6,10 @@ datasets:
   name: tonebooks_hard_s  # dataset name for tokenizer and checkpoint paths
   path: qklent/tonebooks-mfa-phonemes-only-hard-s  # HuggingFace dataset ID or local path
   mask_key: hard_s_timestamps  # key in dataset containing phoneme timestamps to mask
-  batch_size_per_gpu: 3200  # smaller batch size for mask fill fine-tuning
-  batch_size_type: frame  # frame | sample
+  batch_size_per_gpu: 8  # smaller batch size for mask fill fine-tuning
+  batch_size_type: sample  # frame | sample
   max_samples: 64  # max sequences per batch if use frame-wise batch_size
-  num_workers: 4
+  num_workers: 1
 
 optim:
   epochs: 10  # fewer epochs for fine-tuning
