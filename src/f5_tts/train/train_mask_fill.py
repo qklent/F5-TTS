@@ -18,7 +18,7 @@ from datasets import load_from_disk, load_dataset
 from omegaconf import OmegaConf
 
 from f5_tts.model import CFM, Trainer
-from f5_tts.model.dataset_masked_phoneme import MaskedPhonemeDataset, collate_fn_masked
+from f5_tts.model.dataset_masked_phoneme_optimized import MemoryOptimizedMaskedPhonemeDataset, collate_fn_masked
 from f5_tts.model.utils import get_tokenizer
 
 
@@ -316,7 +316,7 @@ def main(model_cfg):
         print(f"Total samples: {len(train_hf)}")
 
     # Create masked phoneme dataset
-    train_dataset = MaskedPhonemeDataset(
+    train_dataset = MemoryOptimizedMaskedPhonemeDataset(
         train_hf,
         mask_key=model_cfg.datasets.mask_key,
         **model_cfg.model.mel_spec,
