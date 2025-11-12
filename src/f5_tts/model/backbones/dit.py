@@ -90,7 +90,7 @@ class TextEmbedding(nn.Module):
     def forward(self, text: int["b nt"], seq_len, drop_text=False, audio_mask: bool["b n"] | None = None):
         text = text + 1  # use 0 as filler token. preprocess of batch pad -1, see list_str_to_idx()
         text = text[:, :seq_len]  # curtail if character tokens are more than the mel spec tokens
-        text = F.pad(text, (0, seq_len - text.shape[1]), value=0)  # (opt.) if not self.average_upsampling:
+        text = F.pad(text, (0, seq_len - text.shape[1]), value=0).long()  # (opt.) if not self.average_upsampling: - ensure tensor stays as Long type
         if self.mask_padding:
             text_mask = text == 0
 
