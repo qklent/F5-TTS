@@ -24,7 +24,7 @@ optim:
 model:
   name: F5TTS_v1_Base_MaskFill  # model name for this fine-tuning task
   tokenizer: custom  # tokenizer type - use custom since you have specific vocab
-  tokenizer_path: /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/blobs/4df3e6d5434f0807e13e03652b8b4f391f5a6950/vocab.txt  # path to your custom vocab file
+  tokenizer_path: /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/snapshots/f582b6e5897fe8a5835059405a8439d13bdf7684/vocab.txt  # path to your custom vocab file
   backbone: DiT
   arch:
     dim: 1024
@@ -58,4 +58,4 @@ ckpts:
   last_per_updates: 1000  # save last checkpoint per updates
   save_dir: ckpts/${model.name}_${model.mel_spec.mel_spec_type}_${model.tokenizer}_${datasets.name}
   finetune: True  # enable fine-tuning mode
-  pretrain_path: /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/blobs/4df3e6d5434f0807e13e03652b8b4f391f5a6950/espeech_tts_rlv2.pt  # path to custom pretrained checkpoint
+  pretrain_path: /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/snapshots/f582b6e5897fe8a5835059405a8439d13bdf7684/espeech_tts_rlv2.pt  # path to custom pretrained checkpoint
