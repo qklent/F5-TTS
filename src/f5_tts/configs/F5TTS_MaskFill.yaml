@@ -14,7 +14,7 @@ datasets:
   num_workers: 1  # disable multiprocessing completely to avoid worker memory issues
 
 optim:
-  epochs: 10  # fewer epochs for fine-tuning
+  epochs: 1  # fewer epochs for fine-tuning
   learning_rate: 1e-5  # lower learning rate for fine-tuning
   num_warmup_updates: 2000  # warmup updates
   grad_accumulation_steps: 1  # note: updates = steps / grad_accumulation_steps
