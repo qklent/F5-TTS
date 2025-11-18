@@ -110,33 +110,33 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         Returns (audio_array, sample_rate) or (None, None) if failed.
         """
         # Debug: print available keys in the row
-        print(f"[DEBUG] Available keys in dataset row: {list(row.keys())}")
+        # print(f"[DEBUG] Available keys in dataset row: {list(row.keys())}")
 
-        # Try alternative approaches first since torchcodec AudioDecoder is not available
-        try:
-            # If the dataset has a 'path' or 'file' field, try loading directly first
-            if "path" in row:
-                audio_path = row["path"]
-                print(f"[DEBUG] Trying to load audio from path: {audio_path}")
-                audio_tensor, sample_rate = torchaudio.load(audio_path)
-                return audio_tensor.numpy().squeeze(), sample_rate
-            elif "file" in row:
-                # If it's a file-like object, try to get path
-                audio_path = row["file"]
-                print(f"[DEBUG] Trying to load audio from file: {audio_path}")
-                if hasattr(audio_path, 'name'):
-                    audio_tensor, sample_rate = torchaudio.load(audio_path.name)
-                    return audio_tensor.numpy().squeeze(), sample_rate
-                elif isinstance(audio_path, str):
-                    audio_tensor, sample_rate = torchaudio.load(audio_path)
-                    return audio_tensor.numpy().squeeze(), sample_rate
-            elif "audio_path" in row:
-                audio_path = row["audio_path"]
-                print(f"[DEBUG] Trying to load audio from audio_path: {audio_path}")
-                audio_tensor, sample_rate = torchaudio.load(audio_path)
-                return audio_tensor.numpy().squeeze(), sample_rate
-        except Exception as file_loading_error:
-            print(f"[WARNING] File-based audio loading failed: {str(file_loading_error)[:100]}...")
+        # # Try alternative approaches first since torchcodec AudioDecoder is not available
+        # try:
+        #     # If the dataset has a 'path' or 'file' field, try loading directly first
+        #     if "path" in row:
+        #         audio_path = row["path"]
+        #         print(f"[DEBUG] Trying to load audio from path: {audio_path}")
+        #         audio_tensor, sample_rate = torchaudio.load(audio_path)
+        #         return audio_tensor.numpy().squeeze(), sample_rate
+        #     elif "file" in row:
+        #         # If it's a file-like object, try to get path
+        #         audio_path = row["file"]
+        #         print(f"[DEBUG] Trying to load audio from file: {audio_path}")
+        #         if hasattr(audio_path, 'name'):
+        #             audio_tensor, sample_rate = torchaudio.load(audio_path.name)
+        #             return audio_tensor.numpy().squeeze(), sample_rate
+        #         elif isinstance(audio_path, str):
+        #             audio_tensor, sample_rate = torchaudio.load(audio_path)
+        #             return audio_tensor.numpy().squeeze(), sample_rate
+        #     elif "audio_path" in row:
+        #         audio_path = row["audio_path"]
+        #         print(f"[DEBUG] Trying to load audio from audio_path: {audio_path}")
+        #         audio_tensor, sample_rate = torchaudio.load(audio_path)
+        #         return audio_tensor.numpy().squeeze(), sample_rate
+        # except Exception as file_loading_error:
+        #     print(f"[WARNING] File-based audio loading failed: {str(file_loading_error)[:100]}...")
 
         # Fall back to trying torchcodec (will likely fail but worth trying)
         try:
@@ -151,7 +151,9 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
             # Try to see if audio data is stored as bytes
             try:
                 audio_data = row.get("audio", {})
-                print(f"[DEBUG] Audio data type: {type(audio_data)}, keys: {list(audio_data.keys()) if isinstance(audio_data, dict) else 'N/A'}")
+                print(
+                    f"[DEBUG] Audio data type: {type(audio_data)}, keys: {list(audio_data.keys()) if isinstance(audio_data, dict) else 'N/A'}"
+                )
                 if isinstance(audio_data, dict) and "bytes" in audio_data:
                     # Handle bytes data (would need more specific implementation)
                     print("[WARNING] Audio stored as bytes - not implemented yet")
@@ -169,7 +171,9 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
 
                 # Memory info before starting
                 if torch.cuda.is_available():
-                    print(f"[DEBUG] GPU memory before: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated, {torch.cuda.memory_reserved() / 1024**2:.1f}MB reserved")
+                    print(
+                        f"[DEBUG] GPU memory before: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated, {torch.cuda.memory_reserved() / 1024**2:.1f}MB reserved"
+                    )
 
                 print(f"[DEBUG] Loading data row for index {index}")
                 row = self.data[index]
@@ -185,7 +189,9 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                     continue
 
                 duration = audio.shape[-1] / sample_rate
-                print(f"[DEBUG] Audio extracted - shape: {audio.shape}, sample_rate: {sample_rate}, duration: {duration:.2f}s")
+                print(
+                    f"[DEBUG] Audio extracted - shape: {audio.shape}, sample_rate: {sample_rate}, duration: {duration:.2f}s"
+                )
 
                 # Filter by duration
                 if duration > self.max_audio_length or duration < 0.3:
@@ -218,7 +224,9 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
 
                 # Memory info after audio processing
                 if torch.cuda.is_available():
-                    print(f"[DEBUG] GPU memory after audio processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated")
+                    print(
+                        f"[DEBUG] GPU memory after audio processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated"
+                    )
 
                 # Get mel spectrogram
                 try:
@@ -239,7 +247,9 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
 
                 # Memory info after mel processing
                 if torch.cuda.is_available():
-                    print(f"[DEBUG] GPU memory after mel processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated")
+                    print(
+                        f"[DEBUG] GPU memory after mel processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated"
+                    )
 
                 # Get text
                 print("[DEBUG] Extracting text")
@@ -250,7 +260,9 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
                 print("[DEBUG] Creating phoneme mask")
                 phoneme_timestamps = row.get(self.mask_key, None)
                 mel_length = mel_spec.shape[-1]
-                print(f"[DEBUG] Phoneme timestamps: {len(phoneme_timestamps) if phoneme_timestamps else 0} segments, mel_length: {mel_length}")
+                print(
+                    f"[DEBUG] Phoneme timestamps: {len(phoneme_timestamps) if phoneme_timestamps else 0} segments, mel_length: {mel_length}"
+                )
                 phoneme_mask = self._create_phoneme_mask(phoneme_timestamps, mel_length)
                 print(f"[DEBUG] Phoneme mask created - shape: {phoneme_mask.shape}")
 
