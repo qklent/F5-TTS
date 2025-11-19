@@ -151,12 +151,12 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
             # Try to see if audio data is stored as bytes
             try:
                 audio_data = row.get("audio", {})
-                print(
-                    f"[DEBUG] Audio data type: {type(audio_data)}, keys: {list(audio_data.keys()) if isinstance(audio_data, dict) else 'N/A'}"
-                )
+                # print(
+                #     f"[DEBUG] Audio data type: {type(audio_data)}, keys: {list(audio_data.keys()) if isinstance(audio_data, dict) else 'N/A'}"
+                # )
                 if isinstance(audio_data, dict) and "bytes" in audio_data:
                     # Handle bytes data (would need more specific implementation)
-                    print("[WARNING] Audio stored as bytes - not implemented yet")
+                    # print("[WARNING] Audio stored as bytes - not implemented yet")
                     return None, None
             except Exception as fallback_error:
                 print(f"[WARNING] Fallback audio loading also failed: {str(fallback_error)[:100]}...")
@@ -167,118 +167,118 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         max_retries = 5
         for retry in range(max_retries):
             try:
-                print(f"[DEBUG] Starting __getitem__ for index {index}, retry {retry}")
+                # print(f"[DEBUG] Starting __getitem__ for index {index}, retry {retry}")
 
-                # Memory info before starting
-                if torch.cuda.is_available():
-                    print(
-                        f"[DEBUG] GPU memory before: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated, {torch.cuda.memory_reserved() / 1024**2:.1f}MB reserved"
-                    )
+                # # Memory info before starting
+                # if torch.cuda.is_available():
+                #     print(
+                #         f"[DEBUG] GPU memory before: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated, {torch.cuda.memory_reserved() / 1024**2:.1f}MB reserved"
+                #     )
 
-                print(f"[DEBUG] Loading data row for index {index}")
+                # print(f"[DEBUG] Loading data row for index {index}")
                 row = self.data[index]
-                print("[DEBUG] Successfully loaded data row")
+                # print("[DEBUG] Successfully loaded data row")
 
-                print("[DEBUG] Extracting audio array (safe mode)")
+                # print("[DEBUG] Extracting audio array (safe mode)")
                 # Use safe audio loading
                 audio, sample_rate = self._safe_load_audio(row)
 
                 if audio is None:
-                    print(f"[WARNING] Could not load audio for sample {index}, skipping")
+                    # print(f"[WARNING] Could not load audio for sample {index}, skipping")
                     index = (index + 1) % len(self.data)
                     continue
 
                 duration = audio.shape[-1] / sample_rate
-                print(
-                    f"[DEBUG] Audio extracted - shape: {audio.shape}, sample_rate: {sample_rate}, duration: {duration:.2f}s"
-                )
+                # print(
+                #     f"[DEBUG] Audio extracted - shape: {audio.shape}, sample_rate: {sample_rate}, duration: {duration:.2f}s"
+                # )
 
                 # Filter by duration
                 if duration > self.max_audio_length or duration < 0.3:
-                    print(f"[DEBUG] Skipping audio due to duration ({duration:.2f}s)")
+                    # print(f"[DEBUG] Skipping audio due to duration ({duration:.2f}s)")
                     index = (index + 1) % len(self.data)
                     continue
 
                 # Convert to tensor (with explicit dtype to save memory)
-                print(f"[DEBUG] Converting array to torch tensor - size: {audio.nbytes / 1024**2:.1f}MB")
+                # print(f"[DEBUG] Converting array to torch tensor - size: {audio.nbytes / 1024**2:.1f}MB")
                 if isinstance(audio, np.ndarray):
                     audio_tensor = torch.from_numpy(audio).float()
                 else:
                     audio_tensor = torch.tensor(audio).float()
-                print(f"[DEBUG] Audio tensor created - shape: {audio_tensor.shape}")
+                # print(f"[DEBUG] Audio tensor created - shape: {audio_tensor.shape}")
 
                 # Resample if needed
                 if sample_rate != self.target_sample_rate:
-                    print(f"[DEBUG] Resampling from {sample_rate} to {self.target_sample_rate}")
+                    # print(f"[DEBUG] Resampling from {sample_rate} to {self.target_sample_rate}")
                     resampler = torchaudio.transforms.Resample(sample_rate, self.target_sample_rate)
-                    print("[DEBUG] Resampler created, applying transformation")
+                    # print("[DEBUG] Resampler created, applying transformation")
                     audio_tensor = resampler(audio_tensor)
-                    print(f"[DEBUG] Resampling complete - new shape: {audio_tensor.shape}")
+                    # print(f"[DEBUG] Resampling complete - new shape: {audio_tensor.shape}")
                     # Explicit cleanup of resampler
                     del resampler
-                    print("[DEBUG] Resampler deleted")
+                    # print("[DEBUG] Resampler deleted")
 
-                print("[DEBUG] Adding batch dimension")
+                # print("[DEBUG] Adding batch dimension")
                 audio_tensor = audio_tensor.unsqueeze(0)  # 't -> 1 t'
-                print(f"[DEBUG] Audio tensor final shape: {audio_tensor.shape}")
+                # print(f"[DEBUG] Audio tensor final shape: {audio_tensor.shape}")
 
-                # Memory info after audio processing
-                if torch.cuda.is_available():
-                    print(
-                        f"[DEBUG] GPU memory after audio processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated"
-                    )
+                # # Memory info after audio processing
+                # if torch.cuda.is_available():
+                #     print(
+                #         f"[DEBUG] GPU memory after audio processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated"
+                #     )
 
                 # Get mel spectrogram
                 try:
-                    print("[DEBUG] Computing mel spectrogram")
+                    # print("[DEBUG] Computing mel spectrogram")
                     mel_spec = self.mel_spectrogram(audio_tensor)
-                    print(f"[DEBUG] Mel spectrogram computed - shape: {mel_spec.shape}")
+                    # print(f"[DEBUG] Mel spectrogram computed - shape: {mel_spec.shape}")
                     mel_spec = mel_spec.squeeze(0)  # '1 d t -> d t'
-                    print(f"[DEBUG] Mel spectrogram squeezed - final shape: {mel_spec.shape}")
+                    # print(f"[DEBUG] Mel spectrogram squeezed - final shape: {mel_spec.shape}")
                 except Exception as e:
                     print(f"[ERROR] Error processing mel spectrogram for sample {index}: {e}")
                     index = (index + 1) % len(self.data)
                     continue
 
                 # Clean up audio tensor to free memory
-                print("[DEBUG] Cleaning up audio tensor")
+                # print("[DEBUG] Cleaning up audio tensor")
                 del audio_tensor
-                print("[DEBUG] Audio tensor deleted")
+                # print("[DEBUG] Audio tensor deleted")
 
                 # Memory info after mel processing
-                if torch.cuda.is_available():
-                    print(
-                        f"[DEBUG] GPU memory after mel processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated"
-                    )
+                # if torch.cuda.is_available():
+                #     print(
+                #         f"[DEBUG] GPU memory after mel processing: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated"
+                #     )
 
                 # Get text
-                print("[DEBUG] Extracting text")
+                # print("[DEBUG] Extracting text")
                 text = row["text"]
-                print(f"[DEBUG] Text extracted - length: {len(text)} characters")
+                # print(f"[DEBUG] Text extracted - length: {len(text)} characters")
 
                 # Create phoneme mask
-                print("[DEBUG] Creating phoneme mask")
+                # print("[DEBUG] Creating phoneme mask")
                 phoneme_timestamps = row.get(self.mask_key, None)
                 mel_length = mel_spec.shape[-1]
-                print(
-                    f"[DEBUG] Phoneme timestamps: {len(phoneme_timestamps) if phoneme_timestamps else 0} segments, mel_length: {mel_length}"
-                )
+                # print(
+                #     f"[DEBUG] Phoneme timestamps: {len(phoneme_timestamps) if phoneme_timestamps else 0} segments, mel_length: {mel_length}"
+                # )
                 phoneme_mask = self._create_phoneme_mask(phoneme_timestamps, mel_length)
-                print(f"[DEBUG] Phoneme mask created - shape: {phoneme_mask.shape}")
+                # print(f"[DEBUG] Phoneme mask created - shape: {phoneme_mask.shape}")
 
                 # Explicit garbage collection every 100 samples
                 if index % 100 == 0:
-                    print(f"[DEBUG] Running garbage collection at index {index}")
+                    # print(f"[DEBUG] Running garbage collection at index {index}")
                     gc.collect()
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
-                        print("[DEBUG] GPU cache cleared")
+                        # print("[DEBUG] GPU cache cleared")
 
-                print(f"[DEBUG] Successfully completed __getitem__ for index {index}")
+                # print(f"[DEBUG] Successfully completed __getitem__ for index {index}")
 
-                # Final memory info
-                if torch.cuda.is_available():
-                    print(f"[DEBUG] Final GPU memory: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated")
+                # # Final memory info
+                # if torch.cuda.is_available():
+                #     print(f"[DEBUG] Final GPU memory: {torch.cuda.memory_allocated() / 1024**2:.1f}MB allocated")
 
                 return {
                     "mel": mel_spec,
