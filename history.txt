@@ -1,0 +1,59 @@
+    1  git clone git@github.com:qklent/F5-TTS.git
+    2  clear
+    3  git clone https://github.com/qklent/F5-TTS.git
+    4  cd F5-TTS/
+    5  pip install datasets 
+    6  pip install torchcodec
+    7  pip install -U datasets["audio"]
+    8  clear
+    9  apt-get install ffmpeg
+   10  apt-get update
+   11  apt-get upgrade
+   12  clear
+   13  pip list | grep torch
+   14  pip install torchcodec==0.7.0 datasets==4.4.1
+   15  clear
+   16  git pull
+   17  pip list > reqs.txt
+   18  pip install -e .
+   19  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   20  cd src/
+   21  clear
+   22  pip install hf_transfer
+   23  hf download ESpeech/ESpeech-TTS-1_RL-V2
+   24  git pull
+   25  clear
+   26  git pull
+   27  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   28  ;ls
+   29  git checkout mask_fill
+   30  git pull
+   31  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   32  ls /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/blobs/4df3e6d5434f0807e13e03652b8b4f391f5a6950
+   33  ls /workspace/.cache/huggingface/hub/models--ESpeech--ESpeech-TTS-1_RL-V2/snapshots/f582b6e5897fe8a5835059405a8439d13bdf7684/
+   34  git pull
+   35  clear
+   36  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   37  clear
+   38  git pull
+   39  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   40  clear
+   41  git pull
+   42  cd ..
+   43  clear
+   44  git pull
+   45  python3 create_hard_s_timestamps.py 
+   46  clear
+   47  cd src/
+   48  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   49  clear
+   50  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   51  git pull
+   52  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   53  clear
+   54  git pull
+   55  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
+   56  clear
+   57  git pull
+   58  clear
+   59  python -m f5_tts.train.train_mask_fill --config-name=F5TTS_MaskFill
