@@ -32,6 +32,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         win_length=1024,
         mel_spec_type="vocos",
         mask_key="hard_s_timestamps",
+        mask_margin_ms=30.0,  # Margin in milliseconds to extend mask around phoneme boundaries
         max_audio_length=30.0,  # Maximum audio length in seconds
         dataset_length=None,  # Limit dataset to this many samples (None = use full dataset)
         random_seed=42,  # Random seed for reproducible sampling (None = no seed)
@@ -51,6 +52,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         self.target_sample_rate = target_sample_rate
         self.hop_length = hop_length
         self.mask_key = mask_key
+        self.mask_margin_s = mask_margin_ms / 1000.0  # convert to seconds
         self.max_audio_length = max_audio_length
 
         self.mel_spectrogram = MelSpec(
@@ -92,8 +94,8 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
             return mask
 
         for start_time, end_time in timestamps:
-            start_frame = self._time_to_frame(start_time)
-            end_frame = self._time_to_frame(end_time)
+            start_frame = self._time_to_frame(start_time - self.mask_margin_s)
+            end_frame = self._time_to_frame(end_time + self.mask_margin_s)
 
             # Clamp to valid range
             start_frame = max(0, min(start_frame, mel_length - 1))
@@ -140,7 +142,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
 
         # Fall back to trying torchcodec (will likely fail but worth trying)
         try:
-            print("[DEBUG] Trying torchcodec audio loading...")
+            # print("[DEBUG] Trying torchcodec audio loading...")
             # First try to access the audio normally
             audio = row["audio"]["array"]
             sample_rate = row["audio"]["sampling_rate"]
@@ -295,7 +297,7 @@ class MemoryOptimizedMaskedPhonemeDataset(Dataset):
         # If we've tried max_retries times, return a dummy sample
         print(f"Failed to load any valid samples after {max_retries} retries, returning dummy sample")
         dummy_mel = torch.zeros((100, 100))  # 100 mel channels, 100 frames
-        dummy_mask = torch.zeros(100, dtype=torch.bool)
+        dummy_mask = torch.ones(100, dtype=torch.bool)  # all-True to avoid NaN loss from empty mask
         return {
             "mel": dummy_mel,
             "text": "dummy text sample",  # Non-empty text to avoid tokenization issues
