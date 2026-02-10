@@ -306,4 +306,9 @@ class CFM(nn.Module):
         loss = F.mse_loss(pred, flow, reduction="none")
         loss = loss[rand_span_mask]
 
-        return loss.mean(), cond, pred
+        if loss.numel() == 0:
+            loss = torch.tensor(0.0, device=self.device, requires_grad=True)
+        else:
+            loss = loss.mean()
+
+        return loss, cond, pred
